@@ -3,6 +3,8 @@ package api
 import (
 	"log"
 	"net/http"
+
+	"github.com/MahoneyGit/DockerGOLearning.git/src/DockerGOLearning/logger"
 )
 
 type APIServer struct {
@@ -27,11 +29,11 @@ func writeUser(writter http.ResponseWriter, request *http.Request) {
 func (s *APIServer) Run() error {
 	// ServeMux is something called a http request multplexer (router)
 	router := http.NewServeMux()
-	router.HandleFunc("/book/{bookID}", writeUser)
+	router.HandleFunc("GET /book/{bookID}", writeUser)
 
 	server := http.Server{
 		Addr:    s.addr,
-		Handler: router,
+		Handler: requireAuth(logger.RequestLogger(router)),
 	}
 
 	log.Printf("Server started on address %s", s.addr)
@@ -52,3 +54,15 @@ func (s *APIServer) Run() error {
 // point := &Point{1, 2} // Pointer to a Point
 // 	point.Move(5, 6) // This modifies the original point
 // 	fmt.Println(*point) // Output: {6 8}
+
+func requireAuth(next http.Handler) http.HandlerFunc {
+	return func(writter http.ResponseWriter, request *http.Request) {
+		token := request.Header.Get("Authorization")
+		if token != "Bearer token" {
+			http.Error(writter, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(writter, request)
+	}
+}
