@@ -20,6 +20,7 @@ func NewAPIServer(addr string) *APIServer {
 }
 
 func writeUser(writter http.ResponseWriter, request *http.Request) {
+	// ':=' is the short declaration operator, it allows declaring and initialising variables in one step
 	bookID := request.PathValue("bookID")
 	writter.Write([]byte("Book ID: " + bookID))
 }
@@ -31,9 +32,14 @@ func (s *APIServer) Run() error {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /book/{bookID}", writeUser)
 
+	middlewareChain := MiddlewareChain(
+		logger.RequestLogger,
+		requireAuth,
+	)
+
 	server := http.Server{
 		Addr:    s.addr,
-		Handler: requireAuth(logger.RequestLogger(router)),
+		Handler: middlewareChain(router),
 	}
 
 	log.Printf("Server started on address %s", s.addr)
@@ -64,5 +70,18 @@ func requireAuth(next http.Handler) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(writter, request)
+	}
+}
+
+type Middleware func(http.Handler) http.HandlerFunc
+
+// The ... before the type Middleware is a variadic parameter in Go. This means that the function MiddlewareChain can accept a variable number of arguments of type Middleware
+// In other words, it allows you to pass any number of Middleware functions to MiddlewareChain, and these will be collected into a slice of Middleware inside the function.
+func MiddlewareChain(middlewares ...Middleware) Middleware {
+	return func(next http.Handler) http.HandlerFunc {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			next = middlewares[i](next)
+		}
+		return next.ServeHTTP
 	}
 }
