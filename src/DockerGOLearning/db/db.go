@@ -63,3 +63,24 @@ func CloseConnection() {
 	fmt.Println("Closing connection")
 	db.Close()
 }
+
+func createDevTables() {
+	createTableQuery := `CREATE TABLE IF NOT EXISTS devSchema.book (
+	book_id SERIAL_PRIMARY_KEY,
+	book_name VARCHAR(50) NOT NULL,
+	num_of_pages int,
+	book_description VARCHAR(150),
+	publisher_id int)`
+	fmt.Println(createTableQuery)
+	// defer dbQueryResult.Close()
+	CloseConnection()
+}
+
+// Todo I want to be able to create a connection and treat it as
+// func (db *sql.DB) insertBook (bookName string, book)
+
+// func updateBookTitle(title int, bookTitle string) {
+// 	createTableQuery := "Update bookTitle FROM information_schema.tables where table_name = 'BasicTable'"
+
+// 	defer dbQueryResult.Close()
+// }
