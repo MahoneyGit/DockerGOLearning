@@ -1,10 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/MahoneyGit/DockerGOLearning.git/src/DockerGOLearning/logger"
+	"github.com/MahoneyGit/DockerGOLearning.git/src/book"
 )
 
 type APIServer struct {
@@ -19,10 +22,67 @@ func NewAPIServer(addr string) *APIServer {
 	}
 }
 
-func writeUser(writter http.ResponseWriter, request *http.Request) {
+func getObjectById(writter http.ResponseWriter, request *http.Request) { // Todo how do I handle search
 	// ':=' is the short declaration operator, it allows declaring and initialising variables in one step
 	bookID := request.PathValue("bookID")
-	writter.Write([]byte("Book ID: " + bookID))
+	responseMessage := ""
+
+	bookIDAsInt, err := strconv.Atoi(bookID)
+	if err != nil {
+		responseMessage = fmt.Sprintf("Invalid Book ID: %s", bookID) //Todo can I extract this logic out sooner
+	} else {
+		bookFoundByID, err := book.GetBookByID(bookIDAsInt)
+		if err != nil {
+			responseMessage = "Something went wrong, book not found. Please ensure the book has been created correctly"
+		} else {
+			bookFoundByID.PrintDetails()
+			responseMessage = fmt.Sprintf("Book ID: %s sucessfully found", bookID)
+		}
+	}
+	writter.Write([]byte(responseMessage))
+}
+
+func deleteObjectById(writter http.ResponseWriter, request *http.Request) {
+	responseMessage := ""
+	bookID := request.PathValue("bookID") // Todo how can I extract the convert logic out I wonder
+	bookIDAsInt, err := strconv.Atoi(bookID)
+	if err != nil {
+		responseMessage = fmt.Sprintf("Invalid Book ID: %s", bookID)
+	} else {
+		bookDeleted, err := book.DeleteBookByID(bookIDAsInt)
+		if err != nil || !bookDeleted {
+			responseMessage = "Something went wrong, book not deleted, flushing database"
+		} else if bookDeleted {
+			responseMessage = fmt.Sprintf("Book ID: %s sucessfully deleted", bookID)
+		}
+	}
+	writter.Write([]byte(responseMessage))
+}
+
+func createObject(writter http.ResponseWriter, request *http.Request) {
+	bookID := request.PathValue("bookID") //Todo get object details
+	writter.Write([]byte("You want to create a book, Book ID: " + bookID))
+
+	responseMessage := ""
+
+	bookIDAsInt, err := strconv.Atoi(bookID)
+	if err != nil {
+		responseMessage = fmt.Sprintf("Invalid Book ID: %d", bookIDAsInt) //Todo can I extract this logic out sooner
+	} else {
+		createdBook, err := book.CreateBook("Manly Books", 350, "a great book, still being written", 27)
+		if err != nil {
+			responseMessage = "Something went wrong, book not created. Check details and try again"
+		} else {
+			createdBook.PrintDetails()
+			responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", createdBook.BookID)
+		}
+	}
+	writter.Write([]byte(responseMessage))
+}
+
+func updateObjectByID(writter http.ResponseWriter, request *http.Request) {
+	// Todo how do I convert body to an object/struct
+	writter.Write([]byte(fmt.Sprintf("Function not yet implemented")))
 }
 
 // s is a receiver variable, and *APIServer means that Run is a method on a pointer to an APIServer struct.
@@ -30,7 +90,10 @@ func writeUser(writter http.ResponseWriter, request *http.Request) {
 func (s *APIServer) Run() error {
 	// ServeMux is something called a http request multplexer (router)
 	router := http.NewServeMux()
-	router.HandleFunc("GET /book/{bookID}", writeUser)
+	router.HandleFunc("GET /book/{bookID}", getObjectById)
+	router.HandleFunc("PATCH /book/{bookID}", updateObjectByID)
+	router.HandleFunc("PUT /book/{bookID}", createObject)
+	router.HandleFunc("DELETE /book/{bookID}", deleteObjectById)
 
 	middlewareChain := MiddlewareChain(
 		logger.RequestLogger,
