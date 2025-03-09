@@ -5,19 +5,19 @@ import (
 )
 
 type Book struct {
-	BookID          int
-	name            string
-	numOfPages      int
-	bookDescription string
-	publisherId     int
+	BookID          int    `json:"book_id,omitempty" validate:"omitempty"`
+	Name            string `json:"bookName,omitempty" validate:"required,min=3"`
+	NumOfPages      int    `json:"num_of_pages,omitempty" validate:"required,min=1"`
+	BookDescription string `json:"book_description,omitempty" validate:"required"`
+	PublisherId     int    `json:"publisher_id,omitempty" validate:"omitempty"`
 }
 
 func CreateBook(bookName string, numOfPages int, bookDescription string, publisherId int) (Book, error) {
 	b := Book{
-		name:            bookName,
-		numOfPages:      numOfPages,
-		bookDescription: bookDescription,
-		publisherId:     publisherId,
+		Name:            bookName,
+		NumOfPages:      numOfPages,
+		BookDescription: bookDescription,
+		PublisherId:     publisherId,
 	}
 	fmt.Println("Book created, details are as follows, if incorrect you are fucked")
 	b.PrintDetails()
@@ -44,8 +44,8 @@ func UpdateBook(bookID int) (bool, error) {
 }
 
 func (book *Book) PrintDetails() {
-	fmt.Println("book name is: ", book.name)
-	fmt.Println("book page num is: ", book.numOfPages)
-	fmt.Println("book description is: ", book.bookDescription)
-	fmt.Println("book publisherId is: ", book.publisherId)
+	fmt.Println("book name is: ", book.Name)
+	fmt.Println("book page num is: ", book.NumOfPages)
+	fmt.Println("book description is: ", book.BookDescription)
+	fmt.Println("book publisherId is: ", book.PublisherId)
 }

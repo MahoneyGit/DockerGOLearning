@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/MahoneyGit/DockerGOLearning.git/src/DockerGOLearning/logger"
 	"github.com/MahoneyGit/DockerGOLearning.git/src/book"
+	"github.com/go-playground/validator"
 )
 
 type APIServer struct {
@@ -60,21 +62,22 @@ func deleteObjectById(writter http.ResponseWriter, request *http.Request) {
 }
 
 func createObject(writter http.ResponseWriter, request *http.Request) {
-	bookID := request.PathValue("bookID") //Todo get object details
-	writter.Write([]byte("You want to create a book, Book ID: " + bookID))
-
+	// bookID := request.PathValue("bookID") //Todo get object details
 	responseMessage := ""
+	newBook, err := extractBookFromRequest(request)
 
-	bookIDAsInt, err := strconv.Atoi(bookID)
 	if err != nil {
-		responseMessage = fmt.Sprintf("Invalid Book ID: %d", bookIDAsInt) //Todo can I extract this logic out sooner
+		fmt.Println("Failure bitch")
+		handleBadRequest(writter, fmt.Sprintf("Validation failed, Invalid Book: %v", err))
+		return
 	} else {
-		createdBook, err := book.CreateBook("Manly Books", 350, "a great book, still being written", 27)
+		fmt.Println("Great, new book is being created with the following details!")
+		// Todo write to db
 		if err != nil {
 			responseMessage = "Something went wrong, book not created. Check details and try again"
 		} else {
-			createdBook.PrintDetails()
-			responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", createdBook.BookID)
+			newBook.PrintDetails()
+			responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", newBook.BookID)
 		}
 	}
 	writter.Write([]byte(responseMessage))
@@ -92,7 +95,7 @@ func (s *APIServer) Run() error {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /book/{bookID}", getObjectById)
 	router.HandleFunc("PATCH /book/{bookID}", updateObjectByID)
-	router.HandleFunc("PUT /book/{bookID}", createObject)
+	router.HandleFunc("PUT /book/create", createObject)
 	router.HandleFunc("DELETE /book/{bookID}", deleteObjectById)
 
 	middlewareChain := MiddlewareChain(
@@ -147,4 +150,30 @@ func MiddlewareChain(middlewares ...Middleware) Middleware {
 		}
 		return next.ServeHTTP
 	}
+}
+
+func handleBadRequest(writter http.ResponseWriter, responseBody string) {
+	writter.WriteHeader(http.StatusBadRequest)
+	writter.Header().Set("Content-Type", "application/json")
+	resp := make(map[string]string)
+	resp["message"] = responseBody
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+	}
+	writter.Write(jsonResp)
+}
+
+func extractBookFromRequest(request *http.Request) (book.Book, error) {
+	validate := validator.New()
+	var newBook book.Book
+
+	decoder := json.NewDecoder(request.Body)
+	decoder.Decode(&newBook) //Decoding the HTTP request body into the book variable:
+	err := validate.Struct(newBook)
+	if err != nil {
+		fmt.Println("Failure bitch")
+		return book.Book{}, err // Todo, does this not just create a new object in memory? And is not ineffecient?
+	}
+	return newBook, nil
 }
