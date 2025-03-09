@@ -37,15 +37,15 @@ func DeleteBookByID(bookID int) (bool, error) {
 	return true, nil
 }
 
-func UpdateBook(bookID int) (bool, error) {
-	fmt.Println("Creating book in Database..... ", bookID)
+func UpdateBook(book Book) (bool, error) {
+	fmt.Println("Creating book in Database..... ", book.BookID)
 	fmt.Println("Book Created..... ")
 	return true, nil
 }
 
 func (book *Book) PrintDetails() {
-	fmt.Println("book name is: ", book.Name)
-	fmt.Println("book page num is: ", book.NumOfPages)
-	fmt.Println("book description is: ", book.BookDescription)
-	fmt.Println("book publisherId is: ", book.PublisherId)
+	fmt.Println("book name: ", book.Name)
+	fmt.Println("book page num: ", book.NumOfPages)
+	fmt.Println("book description: ", book.BookDescription)
+	fmt.Println("book publisherId: ", book.PublisherId)
 }

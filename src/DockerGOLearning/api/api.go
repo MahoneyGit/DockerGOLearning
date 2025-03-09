@@ -24,7 +24,8 @@ func NewAPIServer(addr string) *APIServer {
 	}
 }
 
-func getObjectById(writter http.ResponseWriter, request *http.Request) { // Todo how do I handle search
+func getObjectById(writter http.ResponseWriter, request *http.Request) {
+	// Todo how do I handle search
 	// ':=' is the short declaration operator, it allows declaring and initialising variables in one step
 	bookID := request.PathValue("bookID")
 	responseMessage := ""
@@ -67,25 +68,39 @@ func createObject(writter http.ResponseWriter, request *http.Request) {
 	newBook, err := extractBookFromRequest(request)
 
 	if err != nil {
-		fmt.Println("Failure bitch")
 		handleBadRequest(writter, fmt.Sprintf("Validation failed, Invalid Book: %v", err))
 		return
 	} else {
 		fmt.Println("Great, new book is being created with the following details!")
 		// Todo write to db
-		if err != nil {
-			responseMessage = "Something went wrong, book not created. Check details and try again"
-		} else {
-			newBook.PrintDetails()
-			responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", newBook.BookID)
-		}
+		// 	responseMessage = "Something went wrong, book not created. Check details and try again"
+		newBook.PrintDetails()
+		responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", newBook.BookID)
 	}
 	writter.Write([]byte(responseMessage))
 }
 
 func updateObjectByID(writter http.ResponseWriter, request *http.Request) {
-	// Todo how do I convert body to an object/struct
-	writter.Write([]byte(fmt.Sprintf("Function not yet implemented")))
+	responseMessage := ""
+	updateRequest, err := extractBookFromRequest(request)
+
+	if err != nil {
+		handleBadRequest(writter, fmt.Sprintf("Validation failed, Invalid Request: %v", err))
+		return
+	}
+
+	bookID := request.PathValue("bookID") // Todo how can I extract the convert logic out I wonder
+	bookIDAsInt, err := strconv.Atoi(bookID)
+	if err != nil {
+		responseMessage = fmt.Sprintf("Invalid Book ID: %d", bookIDAsInt) //Todo can I extract this logic out sooner
+		writter.Write([]byte(responseMessage))
+	} else {
+		fmt.Printf("You are attempting to update, %v, with the following details\n", updateRequest.BookID)
+		updateRequest.PrintDetails()
+		book.UpdateBook(updateRequest)
+		responseMessage = fmt.Sprintf("Book ID: %d sucessfully updated!", updateRequest.BookID) //Todo except not really, integrate with db
+		writter.Write([]byte(responseMessage))
+	}
 }
 
 // s is a receiver variable, and *APIServer means that Run is a method on a pointer to an APIServer struct.
@@ -165,6 +180,7 @@ func handleBadRequest(writter http.ResponseWriter, responseBody string) {
 }
 
 func extractBookFromRequest(request *http.Request) (book.Book, error) {
+	//ToDo add as middleware for create/update
 	validate := validator.New()
 	var newBook book.Book
 
@@ -172,7 +188,7 @@ func extractBookFromRequest(request *http.Request) (book.Book, error) {
 	decoder.Decode(&newBook) //Decoding the HTTP request body into the book variable:
 	err := validate.Struct(newBook)
 	if err != nil {
-		fmt.Println("Failure bitch")
+		fmt.Println("Error Occured")
 		return book.Book{}, err // Todo, does this not just create a new object in memory? And is not ineffecient?
 	}
 	return newBook, nil
