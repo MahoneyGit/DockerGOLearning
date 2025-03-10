@@ -75,14 +75,19 @@ func createObject(writter http.ResponseWriter, request *http.Request) {
 		// Todo write to db
 		// 	responseMessage = "Something went wrong, book not created. Check details and try again"
 		newBook.PrintDetails()
-		responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", newBook.BookID)
+		err := newBook.SaveBook()
+		if err != nil {
+			responseMessage = fmt.Sprintf("Something went horribly, oh so horribly wrong! %v", err)
+		} else {
+			responseMessage = fmt.Sprintf("Book ID: %d sucessfully created", newBook.BookID)
+		}
 	}
 	writter.Write([]byte(responseMessage))
 }
 
 func updateObjectByID(writter http.ResponseWriter, request *http.Request) {
 	responseMessage := ""
-	updateRequest, err := extractBookFromRequest(request)
+	updateBookRequest, err := extractBookFromRequest(request)
 
 	if err != nil {
 		handleBadRequest(writter, fmt.Sprintf("Validation failed, Invalid Request: %v", err))
@@ -91,14 +96,15 @@ func updateObjectByID(writter http.ResponseWriter, request *http.Request) {
 
 	bookID := request.PathValue("bookID") // Todo how can I extract the convert logic out I wonder
 	bookIDAsInt, err := strconv.Atoi(bookID)
+	updateBookRequest.BookID = bookIDAsInt
 	if err != nil {
 		responseMessage = fmt.Sprintf("Invalid Book ID: %d", bookIDAsInt) //Todo can I extract this logic out sooner
 		writter.Write([]byte(responseMessage))
 	} else {
-		fmt.Printf("You are attempting to update, %v, with the following details\n", updateRequest.BookID)
-		updateRequest.PrintDetails()
-		book.UpdateBook(updateRequest)
-		responseMessage = fmt.Sprintf("Book ID: %d sucessfully updated!", updateRequest.BookID) //Todo except not really, integrate with db
+		fmt.Printf("You are attempting to update, %v, with the following details\n", updateBookRequest.BookID)
+		updateBookRequest.PrintDetails()
+		updateBookRequest.UpdateBook()
+		responseMessage = fmt.Sprintf("Book ID: %d sucessfully updated!", updateBookRequest.BookID) //Todo except not really, integrate with db
 		writter.Write([]byte(responseMessage))
 	}
 }

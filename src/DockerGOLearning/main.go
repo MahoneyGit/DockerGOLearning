@@ -28,7 +28,7 @@ func createBook() {
 
 func runDatabase() {
 	db.EstablishConnection()
-	db.RunQuery()
+	// db.RunQuery()
 
 	db.CloseConnection()
 }

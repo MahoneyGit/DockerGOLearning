@@ -25,38 +25,35 @@ func EstablishConnection() {
 	var err error
 	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
+		fmt.Printf("Something went wrong! %v\n", err)
 		panic(err)
 	}
 	// defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
+		fmt.Printf("Something went wrong! %v\n", err)
 		panic(err)
 	}
 
 	fmt.Println("Connection Established")
 }
 
-func RunQuery() {
-	query := "SELECT table_name FROM information_schema.tables where table_name = 'BasicTable'"
+func RunQuery(query string) (err error) { // bad Practice to have just generic run query function but just testing
+	fmt.Printf("Establishing environment and connection\n")
+	establishEnvironment()
+	fmt.Printf("Running query")
+
 	dbQueryResult, err := db.Query(query)
 	if err != nil {
-		panic(err)
+		fmt.Printf("\n\nSomething has gone seriously wrong!%v\n\n", err)
+		return err
 	}
-
-	defer dbQueryResult.Close()
-	for dbQueryResult.Next() {
-		var (
-			table_name string
-		)
-		if err := dbQueryResult.Scan(&table_name); err != nil {
-			panic(err)
-		}
-		fmt.Printf("%s\n", table_name)
-	}
-	if err := dbQueryResult.Err(); err != nil {
-		panic(err)
-	}
+	// if err := dbQueryResult.Err(); err != nil {
+	// 	return err
+	// }
+	fmt.Println(dbQueryResult)
+	return nil
 }
 
 func CloseConnection() {
@@ -64,16 +61,28 @@ func CloseConnection() {
 	db.Close()
 }
 
+func establishEnvironment() {
+	EstablishConnection()
+	createDevTables()
+}
+
 func createDevTables() {
-	createTableQuery := `CREATE TABLE IF NOT EXISTS devSchema.book (
-	book_id SERIAL_PRIMARY_KEY,
-	book_name VARCHAR(50) NOT NULL,
+	createTableQuery := `CREATE TABLE IF NOT EXISTS public.book (
+	book_id serial PRIMARY KEY,
+	book_name VARCHAR(250) NOT NULL,
 	num_of_pages int,
-	book_description VARCHAR(150),
+	book_description VARCHAR(250),
 	publisher_id int)`
 	fmt.Println(createTableQuery)
 	// defer dbQueryResult.Close()
-	CloseConnection()
+	// CloseConnection()
+	dbQueryResult, err := db.Query(createTableQuery)
+	if err != nil {
+		fmt.Printf("Something went wrong! %v\n", err)
+		panic(err)
+	} else {
+		fmt.Println(dbQueryResult)
+	}
 }
 
 // Todo I want to be able to create a connection and treat it as
