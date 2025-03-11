@@ -25,6 +25,8 @@ func NewAPIServer(addr string) *APIServer {
 }
 
 func getObjectById(writter http.ResponseWriter, request *http.Request) {
+	writter.WriteHeader(http.StatusOK)
+	writter.Header().Set("Content-Type", "application/json")
 	// Todo how do I handle search
 	// ':=' is the short declaration operator, it allows declaring and initialising variables in one step
 	bookID := request.PathValue("bookID")
@@ -32,14 +34,13 @@ func getObjectById(writter http.ResponseWriter, request *http.Request) {
 
 	bookIDAsInt, err := strconv.Atoi(bookID)
 	if err != nil {
-		responseMessage = fmt.Sprintf("Invalid Book ID: %s", bookID) //Todo can I extract this logic out sooner
+		responseMessage = fmt.Sprintf("Invalid Book ID: %s", bookID)
 	} else {
 		bookFoundByID, err := book.GetBookByID(bookIDAsInt)
 		if err != nil {
 			responseMessage = "Something went wrong, book not found. Please ensure the book has been created correctly"
 		} else {
-			bookFoundByID.PrintDetails()
-			responseMessage = fmt.Sprintf("Book ID: %s sucessfully found", bookID)
+			responseMessage = bookFoundByID
 		}
 	}
 	writter.Write([]byte(responseMessage))

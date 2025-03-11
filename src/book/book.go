@@ -1,6 +1,8 @@
 package book
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
@@ -16,12 +18,30 @@ type Book struct {
 	PublisherId     int    `json:"publisher_id,omitempty" validate:"omitempty"`
 }
 
-func CreateBook(bookName string, numOfPages int, bookDescription string, publisherId int) (Book, error) {
+func CreateBook(bookName string, numOfPages int, bookDescription string, publisherId int) (*Book, error) {
 	b := Book{
 		Name:            bookName,
 		NumOfPages:      numOfPages,
 		BookDescription: bookDescription,
 		PublisherId:     publisherId,
+	}
+	fmt.Println("Book created, details are as follows, if incorrect you are fucked")
+	b.PrintDetails()
+	return &b, nil
+	// I could have created the book via new(Book) but this creates B as an object pointer. Since I am returning a value instead
+	// I was confused how I can still access PrintDetails but Go allows method promotion
+}
+
+func CreateBookFromSqlRow(rowResult *sql.Rows) (*Book, error) {
+	b := &Book{}
+	if rowResult.Next() {
+		err := rowResult.Scan(&b.BookID, &b.Name, &b.NumOfPages, &b.BookDescription, &b.PublisherId)
+		if err != nil {
+			fmt.Printf("\n\nSomething has gone seriously wrong!%v\n\n", err)
+			return nil, err
+		}
+	} else {
+		return b, fmt.Errorf("no rows found")
 	}
 	fmt.Println("Book created, details are as follows, if incorrect you are fucked")
 	b.PrintDetails()
@@ -35,25 +55,31 @@ func (book *Book) SaveBook() (err error) {
 	saveBookQuery := fmt.Sprintf(`INSERT INTO public.book (book_name, num_of_pages, book_description, publisher_id)
 	VALUES ('%s', %d, '%s', %d);`, book.Name, book.NumOfPages, book.BookDescription, book.PublisherId)
 	fmt.Println(saveBookQuery)
-	er := db.RunQuery(saveBookQuery)
+	result, er := db.RunQuery(saveBookQuery)
 	if er != nil {
 		return er
 	}
+	fmt.Println(result)
 	return nil
 }
 
-// Todo figure out how convert book from db to struct
-func GetBookByID(bookID int) (*Book, error) {
+func GetBookByID(bookID int) (string, error) {
 	retrieveBookQuery := fmt.Sprintf(`SELECT * FROM public.book WHERE book_id = %d;`, bookID)
 	fmt.Println(retrieveBookQuery)
-
+	// var retrievedBook *Book
 	fmt.Println("Finding book..... \nActing Busy.... ", bookID)
-	err := db.RunQuery(retrieveBookQuery)
+	bookAsString, err := db.RunQuery(retrieveBookQuery)
 	if err != nil {
-		return &Book{}, err
+		return "", err
 	}
 
-	return &Book{}, nil
+	retrievedBook, err := CreateBookFromSqlRow(bookAsString)
+	if err != nil {
+		return "", err
+	}
+	returnValue, err := json.Marshal(retrievedBook)
+	fmt.Println(returnValue)
+	return (string(returnValue)), nil
 }
 
 func DeleteBookByID(bookID int) (bool, error) {
@@ -61,10 +87,11 @@ func DeleteBookByID(bookID int) (bool, error) {
 	book_id = %d;`, bookID)
 	fmt.Println(deleteBookQuery)
 	fmt.Println("Deleting book..... ", bookID)
-	err := db.RunQuery(deleteBookQuery)
+	result, err := db.RunQuery(deleteBookQuery)
 	if err != nil {
 		return false, err
 	}
+	fmt.Println(result)
 	return true, nil
 }
 
@@ -81,10 +108,11 @@ func (book *Book) UpdateBook() (bool, error) {
     	book_id = %d;`,
 		book.Name, book.NumOfPages, book.BookDescription, book.PublisherId, book.BookID)
 	fmt.Println(saveBookQuery)
-	err := db.RunQuery(saveBookQuery)
+	result, err := db.RunQuery(saveBookQuery)
 	if err != nil {
 		return false, err
 	}
+	fmt.Println(result)
 	fmt.Println("Book Updated..... ")
 	return true, nil
 }

@@ -39,7 +39,7 @@ func EstablishConnection() {
 	fmt.Println("Connection Established")
 }
 
-func RunQuery(query string) (err error) { // bad Practice to have just generic run query function but just testing
+func RunQuery(query string) (result *sql.Rows, err error) { // bad Practice to have just generic run query function but just testing
 	fmt.Printf("Establishing environment and connection\n")
 	establishEnvironment()
 	fmt.Printf("Running query")
@@ -47,13 +47,11 @@ func RunQuery(query string) (err error) { // bad Practice to have just generic r
 	dbQueryResult, err := db.Query(query)
 	if err != nil {
 		fmt.Printf("\n\nSomething has gone seriously wrong!%v\n\n", err)
-		return err
+		return nil, err
 	}
-	// if err := dbQueryResult.Err(); err != nil {
-	// 	return err
-	// }
+
 	fmt.Println(dbQueryResult)
-	return nil
+	return dbQueryResult, nil
 }
 
 func CloseConnection() {
@@ -84,12 +82,3 @@ func createDevTables() {
 		fmt.Println(dbQueryResult)
 	}
 }
-
-// Todo I want to be able to create a connection and treat it as
-// func (db *sql.DB) insertBook (bookName string, book)
-
-// func updateBookTitle(title int, bookTitle string) {
-// 	createTableQuery := "Update bookTitle FROM information_schema.tables where table_name = 'BasicTable'"
-
-// 	defer dbQueryResult.Close()
-// }
