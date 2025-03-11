@@ -27,7 +27,6 @@ func NewAPIServer(addr string) *APIServer {
 func getObjectById(writter http.ResponseWriter, request *http.Request) {
 	writter.WriteHeader(http.StatusOK)
 	writter.Header().Set("Content-Type", "application/json")
-	// Todo how do I handle search
 	// ':=' is the short declaration operator, it allows declaring and initialising variables in one step
 	bookID := request.PathValue("bookID")
 	responseMessage := ""
@@ -119,6 +118,11 @@ func (s *APIServer) Run() error {
 	router.HandleFunc("PATCH /book/{bookID}", updateObjectByID)
 	router.HandleFunc("PUT /book/create", createObject)
 	router.HandleFunc("DELETE /book/{bookID}", deleteObjectById)
+
+	middlewareChain := MiddlewareChain(
+		logger.RequestLogger,
+		requireAuth,
+	)
 
 	middlewareChain := MiddlewareChain(
 		logger.RequestLogger,
